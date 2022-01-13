@@ -5,5 +5,27 @@
 <h2> Status: {{status}}</h2>
 <h2> Seller: {{seller}}</h2>
 <h2> Starting price: {{starting_price}}</h2>
+<h2> Current price: {{current_price}}</h2>
 <h3> Description: {{product_description}}</h3>
+{% if user.is_authenticated %}
+    {% if watchlist_status %}
+    <h3> Item in watchlist </h3>
+    {% else %}
+    <form action = "{% url 'add_to_watchlist' listing.id %}" method = "post">
+        {% csrf_token %}
+        Add listing to watchlist
+        <input type="submit">
+    </form>
+    {% endif %}
+    {% if status=="ACTIVE" %}
+        <form action = "{% url 'bid' listing.id %}" method="post">
+            {% csrf_token %}
+            Bid on item
+            {{bidForm}}
+            <input type="submit">
+        </form>
+    {% endif %}
+{% endif %}
+<img src={{image_url}}>
+
 {% endblock %}

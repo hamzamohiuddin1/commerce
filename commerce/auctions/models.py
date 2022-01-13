@@ -21,15 +21,14 @@ class Listings(models.Model):
     image_url = models.CharField(max_length=64, default="")
     seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_listings",default="")
     product_description = models.TextField(max_length = 512, default="")
-
+    current_price = models.IntegerField(default=0)
+    def updateCurrent(self):
+        if self.bids:
+            self.current_price = max(self.bids.get().amount)
+        else:
+            self.current_price = self.starting_price
     def __str__(self):
-        #bids = self.bids
-        #if self.bids:
-            #current_price = max(self.bids.get().amount)
-        #else:
-        current_price = self.starting_price
-        return f"{self.product_name} Price: {current_price}"
-        #TODO: refer to highest bid
+        return f"{self.product_name} Price: {self.current_price}"
 
 
 class Bids(models.Model):

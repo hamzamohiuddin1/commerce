@@ -23,8 +23,45 @@ def index(request):
         "listings": Listings.objects.filter(status="ACTIVE").all()
     })
 
+@login_required(login_url="/login")
+def watchlist(request):
+    watchlist = User.objects.filter(username=request.user)[0]
+    return render(request, "auctions/watchlist.html",{
+        "watchlist": watchlist.watchlist.all()
+    })
+
+def add_to_watchlist(request, id):
+    if request.method=="POST":
+        listing = Listings.objects.get(pk=id)
+        user = User.objects.filter(username=request.user)[0]
+        user.watchlist.add(listing)
+        return HttpResponseRedirect(reverse("listing", args=(listing.id,)))
+
+def bid(request, id):
+    if request.method=="POST":
+        listing = Listings.objects.get(pk=id)
+        bid_amount = request.POST["bid_amount"]
+        user = User.objects.filter(username=request.user)[0]
+        if(bid_amount>listing.current_price):
+            bid = Bids(listing=listing,amount=bid_amount,user=user)
+            bid.save()
+            listing.updateCurrent()
+            return HttpResponseRedirect(reverse("listing", args=(listing.id,)))
+        else:
+            return HttpResponseRedirect(reverse("listing", args=(listing.id,)))
+
+    pass
+
+
 def listing(request, id):
     listing = Listings.objects.filter(pk=id)[0]
+    watchlist_status = False
+    if request.user.is_authenticated:
+        watchlist = User.objects.filter(username=request.user)[0]
+        if listing in watchlist.watchlist.all():
+            watchlist_status = True
+        else:
+            watchlist_status = False
     return render(request, "auctions/listing.html",{
         "id": id,
         "listing": Listings.objects.filter(pk=id)[0],
@@ -34,8 +71,9 @@ def listing(request, id):
         "starting_price": listing.starting_price,
         "image_url": listing.image_url,
         "seller": listing.seller,
-        "product_description": listing.product_description
-
+        "product_description": listing.product_description,
+        "watchlist_status": watchlist_status,
+        "current_price":listing.current_price
     })
 
 @login_required(login_url="/login")
@@ -57,6 +95,7 @@ def new_listing(request):
         listing = Listings(product_name=product_name, product_description = product_description,
                           starting_price=starting_price, image_url=image_url, status=status, seller=seller)
         listing.save()
+        listing.updateCurrent()
         return HttpResponseRedirect(reverse("index"))
 
 
